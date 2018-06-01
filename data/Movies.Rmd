@@ -1,0 +1,137 @@
+---
+title: "Movies - Is PG-13 the new R?"
+#author: "Austin Halvorsen"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    theme: flatly
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+
+```{r, include=FALSE}
+library(mosaic)
+library(DT) 
+library(ggplot2)
+library(tidyverse)
+library(pander) #You'll love this one! 
+# To use it Run this in your Console: install.packages("pander")
+
+movies <- read.csv("../Data/movies.csv", header = TRUE)
+movies2 <- read.csv("../Data/movies2.csv", header = TRUE)
+# To get the movies and movies2 data into your Console, Run:
+# "Session -> Set Working Directory -> To Source File Location"
+# and then, "Play" this R-Chunk with the little green play button.
+
+plot_movie <- movies2 %>% 
+  group_by(rating, year) %>% 
+  summarise(n = n()) %>%
+  filter(rating == "PG-13" | rating == "R") %>%
+  as_tibble()
+
+all_ratings <- movies %>% group_by(mpaa, year) %>% summarise(n = n()) %>%
+  filter(mpaa == " PG-13" | mpaa == " R") %>%
+  as_tibble()
+
+weighted_avg <- all_ratings %>% 
+  group_by(n, year) %>% 
+  mutate('mean_line' = mean(n))
+
+rmovies <- subset(movies, mpaa == " R")
+pg13_movies <- subset(movies, mpaa == " PG-13")
+rmdb <- hist(rmovies$year, breaks = 20)
+pg13mdb <- hist(pg13_movies$year, breaks = 20)
+```
+
+<br />
+
+## Background
+
+As I pondered the movies data set, I was drawn to the trends of the Motion Picture Association of America ratings (_R, PG-13, PG, etc._). I began to wonder, how do these ratings change over time? What factors influence a rating? With so many movies out there, I was sure this would be an interesting aspect to look at.
+
+Specifically, I wanted to see the instances of 'R' ratings compared to the instances of 'PG-13' movies. To answer this fully, however, it is important to note that the 'PG-13' rating was not released until 1984. I will compare these nuances further in my analysis. **So, is there any correlation between 'R' and 'PG-13' movies in recent history? Specifically, if there is a decline in 'R' movies, do 'PG-13' movies become more commonplace?** Lets find out! 
+
+<!-- Instructions: Come up with an interesting question and answer it with the "movies" dataset that is provided above. 
+
+Write a Background that gives meaning to your question of interest.
+
+State your Question.
+Which ratings earn more? 
+Which draws draws a bigger crowd?
+
+Perform an appropriate "Analysis" that gives useful information for answering your question. The hope would be a really powerful graphic and some summary tables of supporting statistics.
+
+Interpret your analysis and expound on your findings. -->
+
+## Analysis
+
+After reviewing the data-sets I designed two charts, one from each data set. Based on my initial observations, it is clear to see that there are some gaps from both data-sets, as one contains a larger portion of information on movies than the other (*as we can see from looking at our corresponding Y axis.*) However, they both tell some interesting stories. 
+
+Before I dive too far in, it's important to note that the MPAA "PG-13" rating was officially [introduced in 1984](https://filmratings.com/History). The discrepancy on the lower chart could be due to renaming older ratings to meet the "modern" 'PG-13' rating. In addition, please notice that the ratings system was first [introduced in 1968](https://www.mpaa.org/film-ratings/), which is where we see the 'R' rating in the second chart. 
+
+Take a moment to look at the charts below and familiarize yourself with each. Pay attention for things that strike you as odd or surprise you. The two plots show the instances of movie ratings over time, the first since 1986 and the second since 1945. It includes only movies with an official MPAA rating, nulls and other ratings have been ommitted for this analysis. 
+
+```{r}
+library(ggplot2)
+ggplot(data = plot_movie) +
+  geom_point(aes(x = year, y = n, color = rating)) + 
+  geom_line(aes(x = year, y = n, color = rating)) +
+  labs(x = "Year", y = "# of Movies per year") +
+  scale_x_continuous(breaks = c(1985, 1990, 1995, 2000, 2005, 2010, 2015)) +
+  ggtitle("MPAA Ratings over Time - Plot A") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme_bw()
+  
+ggplot(data = all_ratings) +
+  geom_point(aes(x = year, y = n, color = mpaa)) + 
+  geom_line(aes(x = year, y = n, color = mpaa)) + 
+  labs(x = "Year", y = "# of Movies per year") +
+  scale_x_continuous(breaks = c(1940,1950,1960,1970,1980,1990,2000,2010)) +
+  ggtitle("MPAA Ratings over Time - Plot B") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  theme_light()
+
+#plot( rmdb, col = rgb(0,0,1,1/4))
+#ffplot( pg13mdb, col = rgb(1,0,0,1/4), add = TRUE)
+#hist(rmovies$year, breaks = 20, col = "lightblue", border = "black")
+
+```
+
+Beginning with Plot B (*the lower plot*), we can see that there were not a lot of movies with 'R' or 'PG-13' ratings from 1950 to 1990. Around 1995, there is an explosion of movies. 'R' ratings increase from just around 10 per year, to more than **300** per year from 1995 to 2002 while 'PG-13' ratings increased from around 2-3 per year to 50 and 100 from 1995 to 2005.  
+
+Looking at Plot A (*the upper plot*), we see a little more granular data from 1985 until 2016. Now, this plot appears to be missing some information on movies, (since it is pulling from a different data-set) but it still shows some interesting information. Year after year, we see the two ratings get progressively closer to one another until in 2004, 'PG-13' surpasses 'R' movies. Afterwards, 'R' jumps back up again. 
+
+After 2005, the difference becomes less severe. The average number of movies per year for 'R' is about 109 (see chart in the Interpretation section) and the average for 'PG-13' is about 64. 
+
+```{r}
+library(ggplot2)
+
+```
+
+## Interpretation
+
+Based on my analysis, there does seem to be a correlation between decreasing 'R' movies to an increase of 'PG-13' movies, however, I do not believe that it is a causal relationship. Looking at the data for 'R' movies, there has always been a large amount of them year over year. For example, lets examine the data from the first chart in the chart below, you may need to adjust your window size or press the "plus" button to see all the data.
+
+<br >
+
+```{r}
+average_movie <- na.omit(plot_movie)
+average_movie <- favstats(n ~ rating, data = plot_movie, na.rm = TRUE)
+average_movie <- subset(average_movie, rating == "R" | rating == "PG-13")
+datatable(average_movie, extensions = "Responsive", caption = "Based on the sample of movies data set (movies2)")
+```
+
+<br >
+
+Examining the average, we can see that the average for 'R' is about 109 movies per year and the average for 'PG-13' movies is about 64 movies per year. Noting that in 1986, there had been just over 100 movies released for 'R' movies, there does not seem to be much of a decline of 'R' movies. However, in 'PG-13' movies, we do see that there has been an increase of movies per year and is on a continued increase. 
+
+This decrease to 'R' movies may be a result of lesser attendance in 'R' movies and therefore, film producers try to get the movie to a 'PG-13' rating to have increased attendance. Another factor could be relative morals in the agency that gives ratings. The decline in 'R' ratings could be a result in those movies being rated 'PG-13' instead. This would be an interesting question to tackle as well. 
+
+I would say in order to get more conclusive results, there would need to be more data to say that 'R' movies are decreasing as a result of an increase 'PG-13' movies. It is easy to see that there is an increase to movies in general as well, but I do not believe, based on the data presented, that there is a direct link between decreasing 'R' movies to a matched increase in 'PG-13' movies.
+
+---
+[Home](../index.html)
+
+
+

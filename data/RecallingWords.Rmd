@@ -1,0 +1,221 @@
+---
+title: "Recalling Words"
+output: 
+  html_document:
+    theme: flatly
+    highlight: kate
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+
+<script type="text/javascript">
+ function showhide(id) {
+    var e = document.getElementById(id);
+    e.style.display = (e.style.display == 'block') ? 'none' : 'block';
+ }
+</script>
+
+```{r, include=FALSE}
+library(mosaic)
+library(car)
+library(pander)
+library(DT) #You may need to run: install.packages("DT") 
+library(tidyverse)
+```
+
+```{r, eval=FALSE}
+# Play the chunk above and this one to get the data into your Console
+View(Friendly)
+?Friendly
+```
+
+#### **Background**
+
+Many teachers and other educators are interested in understanding how to best deliver new content to students. In general, they have two choices of how to do this.
+
+1. The Meshed Approach
+    * Deliver new content while simultaneously reviewing previously understood content.
+
+2. The Before Approach
+    * Deliver new content after fully reviewing previously understood content.
+
+<p align="justify">A study was performed to determine whether the *Meshed* or *Before* approaches to delivering content had any positive benefits on memory recall. </p>
+
+<p align="justify">In the data set, we also see that there is another test group, SFR, which stands for *'Standard Free Recall'*. This method takes a random approach to memorizing the words by presenting the words in a random order to the student.</p>
+
+<p align="justify">To really understand which approach works the best, I decided to include the SFR data in my analysis. Since we will be conducting Wlcoxon tests, which can only accommodate two groups. So in order to test each group, I will be performing three hypothesis tests at the total level of significance of 0.05. Since I will be doing three tests, I will be dividing our alpha into each of the tests, if necessary.</p>
+
+<p align="justify">The groups that will be tested against each other will be:
+
+1. **SFR and Meshed**
+
+2. **SFR and Before**
+
+3. **Meshed and Before** 
+
+We will test, in order, each group to see if there is evidence against our null hypothesis. In other words, **our question: is there evidence that suggests that one approach is stochastically greater than our other groups?** Written in notation, our hypothesis test looks as follows.</p>
+
+<!-- **REQUIRED ON ANALYSIS** One favstats, one box-plot and one Wilcox test -->
+
+$$
+  H_0: \mu_\text{the distributions are stochastically equal}
+$$
+$$
+  H_a: \mu_\text{one distribution is stochastically greater than the other}
+$$
+
+--- 
+
+<p align="center">Level of significance: $\alpha = 0.05$</p>
+
+---
+
+<div style="padding-left:15px;">
+
+### Data Analysis 
+
+Before we start breaking into the groups, we will take a look at the `favstats` summary. 
+
+-----------------------------------------------------------------------------
+     Test Method      min    Q1     median    Q3     max   mean    sd     n  
+-------------------- ----- ------- -------- ------- ----- ------ ------- ----
+       Before         24    37.25     39     39.75   40    36.6   5.337   10 
+
+       Meshed         30     36      36.5    38.75   40    36.6   3.026   10 
+
+        SFR           21     25       27     38.5    39    30.3   7.334   10 
+-----------------------------------------------------------------------------
+
+By looking at the table, we can immediately see that the spread of each group is quite different. The SFR group has the greatest spread at `7.334`, the Meshed group has the smallest spread at `3.026`. One of the other observations from the table that we can see is that the `Before` and `Meshed` groups both have a max of `40` *(a perfect score)* while the `SFR` group only has a max of `39`. 
+
+In order to get a better `view` of the data, we will take our `favstats` table and graph it on a box plot. Lets take a look at the spread of this data to get a better idea of what it looks like.
+
+```{r include=FALSE}
+pander(favstats(Friendly$correct ~ Friendly$condition), output = FALSE)
+```
+
+```{r include=FALSE}
+pander(table(Friendly$correct))
+```
+
+```{r boxplot}
+boxes <- Friendly %>% 
+  group_by(condition) %>% 
+  ggplot(aes(x = condition))
+
+boxes +
+  geom_boxplot(aes(x = condition, y = correct, fill = condition)) + 
+  labs(title = "Boxplot", x = "Type of Test", y = "# of words correct") +
+  coord_flip() +
+  theme_bw()
+```
+
+After looking at the boxplot, we would like to note the graphical spread that the data shows. SFR clearly has a large spread with not many outliers while the other two groups are much closer together. Furthermore, we see that there are outliers in our `before` and `meshed` groups.
+
+Now, we will be conducting our `Wilcoxon Hypothesis Tests` to see how our groups compare to our $H_0$ hyopothesis.
+
+```{r include=FALSE}
+SFR <- subset(Friendly, condition == "SFR")
+Meshed <- subset(Friendly, condition == "Meshed")
+Before <- subset(Friendly, condition == "Before")
+```
+
+---
+
+Group 1 (**SFR and Meshed**):
+
+```{r warning=FALSE}
+pander(wilcox.test(SFR$correct, Meshed$correct, mu = 0, alternative = "greater", conf.level = 0.98333), caption = "Wilcoxon rank sum test with `Group 1`")
+```
+
+---
+
+Group 2 (**SFR and Before**):
+
+```{r warning=FALSE}
+pander(wilcox.test(SFR$correct, Before$correct, mu = 0, alternative = "greater", conf.level = 0.98333), caption = "Wilcoxon rank sum test with `Group 2`")
+```
+
+--- 
+
+Group 3 (**Meshed and Before**):
+
+```{r echo=FALSE, warning=FALSE}
+pander(wilcox.test(Before$correct, Meshed$correct, mu = 0, alternative = "greater", conf.level = 0.98333), caption = "Wilcoxon rank sum test with `Group 3`")
+```
+
+---
+
+### Interpretation
+
+<p align="justify">After conducting our three Wilcoxon tests, we have found some very interesting information. Based on all three of the tests, using a level of significance of $\alpha = 0.05$ (split evenly into the three groups), we do not obtain a $P-value$ strong enough to reject our $H_0$ (null) hypothesis in *any* grouping.</p>
+
+<p align="justify">For our first test, we compared the Meshed grouping with the SFR group and got a $P-value$ of 0.9567. For our second test, we compared the Before grouping with the SFR group and got a $P-value$ of 0.9811. For the last test, we calculated a $P-value$ of 0.189. In each of these tests, we **fail to reject** our null hypothesis and indicate that there is insufficient evidence to claim that one distribution is stochasitically greater than the other.</p>
+
+### Conclusion
+
+I was actually very surprised with the results from my experiment. I certianly had a bias towards my data thinking that the best approach would be meshed. Especially looking just at our box plot, it only makes sense that SFR makes no sense to use since many of the subjects had a higher concentration of correct answers in the other two tests. For me, this was an important lesson in running the tests to make sure that our bias won't influence our decision.
+
+I think a way we could improve upon this study is to first show that standard free response (*SFR*) is or is not effective. I would begin by targeting that test specifically to understand if it truly works or not. From there, I would begin to collect more data on the before and meshed groups. I would then test these groups and look for patterns if one shows that it is truly better than the other.
+
+Overall, it would be interesting to compare my findings to those of others. Did they reach the same conclusion I did? I would be curious to see if they came to alternative conclusions when testing each group with the same $\alpha$. 
+
+---
+
+I like to know you read my analysis. In your feedback, tell me what your favorite color is! 
+
+##### <a href="javascript:showhide('uniquename')">The Experiment <span style="font-size:8pt;">(click to view)</span></a>
+
+
+<div id="uniquename" style="display:none;"><p align="justify">
+
+Individuals were seated at a computer and shown a list of words. Words appeared on the screen one at a time, for two seconds each, until all words had been shown (40 total). After all words were shown, they were required to perform a few two-digit mathematical additions (like 15 + 25) for 15 seconds to avoid immediate memory recall of the words. They were then asked to write down as many of the 40 words as they could remember. They were given a maximum of 5.3 minutes to recall words.</p>
+
+The process of showing words and recalling words was repeated four times with the same list of words each time (four chances to get it right). The presentation of the first trial was the same for all treatment conditions. However, trials 2, 3, and 4 were slightly different for each treatment condition.
+
+<div style="padding-left:15px;">
+
+The `SFR` group (the control group) stands for Standard Free Recall. In all four trials the same list of 40 words was presented, in a random order each time.
+
+The `Before` group also used the same 40 words during each trial. However, any words that were correctly recalled in a previous trial were presented first, or *before* the words that were not recalled in the last trial. After all the correct words were presented in random order, the non-recalled words were presented in a random order.
+
+The `Meshed` group also used the same 40 words during each trial. However, words that were correctly recalled in a previous trial were alternated with a missed word during the next presentation order. 
+
+</div>
+
+The data records the number of correctly recalled words (out of the 40 possible) from the fourth trial. Results were obtained for 30 students, 10 in each of the three treatment groups: `SFR`, `Before`, and `Meshed`. 
+
+</div>
+
+##### <a href="javascript:showhide('uniquename2')">The Data <span style="font-size:8pt;">(click to view)</span></a>
+
+<div id="uniquename2" style="display:none;">
+
+The results from the study can be found in the `Friendly` data set in R after loading `library(car)`. 
+
+Click the "Code" button to see the data.
+
+
+```{r}
+datatable(Friendly, options=list(lengthMenu = c(3,10,30)))
+```
+
+
+</div>
+</div>
+
+<br />
+
+
+<!-- Begin writing your analysis below here. -->
+
+<!-- Note that your goal is to use the Friendly data to show whether or not the Meshed or Before methods have any positive benefit on memory recall. -->
+
+
+---
+
+[Home](../index.html)
+
+
+
